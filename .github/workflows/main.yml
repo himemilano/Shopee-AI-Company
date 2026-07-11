@@ -58,10 +58,14 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         
+        # ⚠️ 【改行破壊ガード】Gitが勝手に画像ファイルをテキストと誤認して改行変換するのを完全に防ぐ設定
+        git config --local core.autocrlf false
+        git config --local core.safecrlf false
+        
         # 成果物フォルダが存在する場合のみコミット処理を実行
         if [ -d "outputs/shopee" ]; then
-          git add outputs/shopee/*
-          git commit -m "📦 [Shopeeチーム] 台湾向け最新CSVおよびCanva画像を保管庫に格納しました" || echo "変更なし"
+          git add -A outputs/shopee/
+          git commit -m "📦 [Shopeeチーム] 台湾向け最新CSVおよびCanva画像を保管庫に格納しました（Git防衛適用）" || echo "変更なし"
           git push
         else
           echo "⚠️ 成果物フォルダ outputs/shopee が生成されなかったため、プッシュをスキップします。"
