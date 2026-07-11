@@ -40,7 +40,7 @@ jobs:
           pip install requests pandas
 
       # --------------------------------------------------
-      # 各国ごとの自動実行処理（選ばれた国だけがピンポイントで動きます）
+      # 各国ごとの自動実行処理（ファイルを自動探索して実行）
       # --------------------------------------------------
 
       # ① シンガポール (SG)
@@ -50,7 +50,10 @@ jobs:
           CANVA_CLIENT_ID: ${{ secrets.CANVA_CLIENT_ID }}
           CANVA_CLIENT_SECRET: ${{ secrets.CANVA_CLIENT_SECRET }}
           SHP_COUNTRY: 'SG'
-        run: python pricing_engine.py
+        run: |
+          TARGET_DIR=$(dirname $(find . -name "pricing_engine.py" | head -n 1))
+          cd "$TARGET_DIR"
+          python pricing_engine.py
 
       # ② 台湾 (TW) ※専用の台湾ファイルを実行
       - name: Run Taiwan Engine
@@ -59,7 +62,10 @@ jobs:
           CANVA_CLIENT_ID: ${{ secrets.CANVA_CLIENT_ID }}
           CANVA_CLIENT_SECRET: ${{ secrets.CANVA_CLIENT_SECRET }}
           SHP_COUNTRY: 'TW'
-        run: python pricing_engine_tw.py
+        run: |
+          TARGET_DIR=$(dirname $(find . -name "pricing_engine_tw.py" | head -n 1))
+          cd "$TARGET_DIR"
+          python pricing_engine_tw.py
 
       # ③ マレーシア (MY)
       - name: Run Malaysia Engine
@@ -68,7 +74,10 @@ jobs:
           CANVA_CLIENT_ID: ${{ secrets.CANVA_CLIENT_ID }}
           CANVA_CLIENT_SECRET: ${{ secrets.CANVA_CLIENT_SECRET }}
           SHP_COUNTRY: 'MY'
-        run: python pricing_engine.py
+        run: |
+          TARGET_DIR=$(dirname $(find . -name "pricing_engine.py" | head -n 1))
+          cd "$TARGET_DIR"
+          python pricing_engine.py
 
       # ④ フィリピン (PH)
       - name: Run Philippines Engine
@@ -77,7 +86,10 @@ jobs:
           CANVA_CLIENT_ID: ${{ secrets.CANVA_CLIENT_ID }}
           CANVA_CLIENT_SECRET: ${{ secrets.CANVA_CLIENT_SECRET }}
           SHP_COUNTRY: 'PH'
-        run: python pricing_engine.py
+        run: |
+          TARGET_DIR=$(dirname $(find . -name "pricing_engine.py" | head -n 1))
+          cd "$TARGET_DIR"
+          python pricing_engine.py
 
       # ⑤ タイ (TH)
       - name: Run Thailand Engine
@@ -86,7 +98,10 @@ jobs:
           CANVA_CLIENT_ID: ${{ secrets.CANVA_CLIENT_ID }}
           CANVA_CLIENT_SECRET: ${{ secrets.CANVA_CLIENT_SECRET }}
           SHP_COUNTRY: 'TH'
-        run: python pricing_engine.py
+        run: |
+          TARGET_DIR=$(dirname $(find . -name "pricing_engine.py" | head -n 1))
+          cd "$TARGET_DIR"
+          python pricing_engine.py
 
       # ⑥ ベトナム (VN)
       - name: Run Vietnam Engine
@@ -95,13 +110,19 @@ jobs:
           CANVA_CLIENT_ID: ${{ secrets.CANVA_CLIENT_ID }}
           CANVA_CLIENT_SECRET: ${{ secrets.CANVA_CLIENT_SECRET }}
           SHP_COUNTRY: 'VN'
-        run: python pricing_engine.py
+        run: |
+          TARGET_DIR=$(dirname $(find . -name "pricing_engine.py" | head -n 1))
+          cd "$TARGET_DIR"
+          python pricing_engine.py
 
-      # ⑦ ブラジル (BR) ※インドネシアからブラジルへ変更
+      # ⑦ ブラジル (BR)
       - name: Run Brazil Engine
         if: ${{ github.event.inputs.target_country == 'brazil' }}
         env:
           CANVA_CLIENT_ID: ${{ secrets.CANVA_CLIENT_ID }}
           CANVA_CLIENT_SECRET: ${{ secrets.CANVA_CLIENT_SECRET }}
           SHP_COUNTRY: 'BR'
-        run: python pricing_engine.py
+        run: |
+          TARGET_DIR=$(dirname $(find . -name "pricing_engine.py" | head -n 1))
+          cd "$TARGET_DIR"
+          python pricing_engine.py
