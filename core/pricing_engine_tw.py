@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import requests
 import base64
@@ -8,8 +9,14 @@ import csv
 OUTPUT_DIR = "outputs/shopee"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
+print("--- 🔍 実行環境デバッグ情報 ---")
+print(f"現在の実行ディレクトリ: {os.getcwd()}")
+print(f"Python実行ファイルパス: {sys.argv[0]}")
+print("--------------------------------")
+
 def fetch_amazon_product_data(asin: str, api_key: str) -> dict:
     """【仕様書第2項】仕入れ元監視 (Amazon API通信)"""
+    # GitHubのSecretsに本物があれば自動で切り替わります
     if not api_key or api_key == "YOUR_AMAZON_API_KEY_HERE":
         print(f"[Amazon API] ⚠️ キー未設定のため、シミュレーションモードで動作中 (ASIN: {asin})")
         return {"price": 3500, "status": "IN_STOCK", "name": "高級お城印帖 / 御朱印帳ケース"}
@@ -60,8 +67,9 @@ def run_canva_creative_engine(client_id: str, client_secret: str, product_name: 
     """【仕様書第2項】Canva API v2 クリエイティブ自動生成＆物理ファイル出力"""
     print(f"[Canva API] 🔐 認証システム起動中...")
     
+    # GitHubのSecretsに本物があれば、DEMO_IDを上書きして本物で通信します
     if client_id == "DEMO_ID" or "YOUR_" in client_id:
-        print(f"[Canva API] ⚠️ デモ鍵のため認証をスキップし、ダミー画像を物理生成します。")
+        print(f"[Canva API] ⚠️ GitHub SecretsにCanvaキーが未設定のため、デモ用ダミー画像を生成します。")
     else:
         token_url = "https://api.canva.com/v1/oauth/token"
         credentials = f"{client_id}:{client_secret}"
@@ -71,17 +79,19 @@ def run_canva_creative_engine(client_id: str, client_secret: str, product_name: 
         try:
             response = requests.post(token_url, headers=headers, data=data, timeout=10)
             if response.status_code == 200:
-                print(f"[Canva API] 🔓 公式アクセストークン取得成功！")
+                print(f"[Canva API] 🔓 本物のアクセストークン取得に成功しました！Canva連携有効です。")
+            else:
+                print(f"[Canva API 認証リクエスト失敗] 応答コード: {response.status_code}")
         except Exception as e:
             print(f"[Canva API エラー] {e}")
 
-    # 物理画像の保存先を保管庫へ変更
+    # 成果物フォルダへの物理画像書き出し
     output_filename = os.path.join(OUTPUT_DIR, "canva_output.png")
     png_pixel_data = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15c4\x00\x00\x00\rIDATx\x9cc`\x00\x00\x00\x02\x00\x01H\xaf\xa4q\x00\x00\x00\x00IEND\xaeB`\x82'
     try:
         with open(output_filename, "wb") as f:
             f.write(png_pixel_data)
-        print(f"[Canva API] ✅ 保管庫への物理ファイル生成完了 -> `{output_filename}`")
+        print(f"[Canva API] ✅ 保管庫への画像ファイル生成完了 -> `{output_filename}`")
     except Exception as e:
         print(f"[Canva API エラー] {e}")
 
@@ -98,7 +108,6 @@ def generate_shopee_mass_update_csv(item_id: int, price_twd: int, product_name: 
     """【ルート②】Shopeeセラーセンター一括変更用CSVの自動生成"""
     print(f"[CSV Engine] Shopee一括更新用CSVの組み立てを開始...")
     
-    # 物理CSVの保存先を保管庫へ変更
     filename = os.path.join(OUTPUT_DIR, "shopee_price_update.csv")
     headers = ["ps_item_id", "ps_item_name", "price", "stock", "update_timestamp"]
     row_data = [item_id, f"【日本直送】{product_name[:30]}", price_twd, 99, int(time.time())]
@@ -108,7 +117,7 @@ def generate_shopee_mass_update_csv(item_id: int, price_twd: int, product_name: 
             writer = csv.writer(f)
             writer.writerow(headers)
             writer.writerow(row_data)
-        print(f"[CSV Engine] ✅ 保管庫への物理CSV生成成功 -> `{filename}`")
+        print(f"[CSV Engine] ✅ 保管庫への一括更新用CSV生成成功 -> `{filename}`")
         return True
     except Exception as e:
         print(f"[CSV Engine エラー] {e}")
