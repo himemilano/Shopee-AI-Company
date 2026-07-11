@@ -2,9 +2,9 @@ name: Shopee Company Taiwan Automation
 
 on:
   schedule:
-    # 毎日 日本時間 8:00, 12:00, 16:00, 20:00 に自動起動 (UTCでは前日23:00, 当日3:00, 7:00, 11:00)
+    # 毎日 日本時間 8:00, 12:00, 16:00, 20:00 に自動起動 (UTC 23:00, 3:00, 7:00, 11:00)
     - cron: '0 23,3,7,11 * * *'
-  workflow_dispatch: # 🔥 会長が手動で国を選んで「今すぐ動け」と命令できるドロップダウンを復活
+  workflow_dispatch:
     inputs:
       country:
         description: '対象国を選択してください (Select Country)'
@@ -12,7 +12,7 @@ on:
         default: 'TW'
         type: choice
         options:
-          - 'TW' # 台湾（今後、他国へ水平展開する際はここに行を追加できます）
+          - 'TW'
 
 jobs:
   run-shopee-operations:
@@ -32,20 +32,37 @@ jobs:
         python -m pip install --upgrade pip
         pip install requests
 
-    - name: Run Shopee Engine
+    # 📂 【迷子撃退機能】リポジトリ内のどこにPythonファイルがあっても自動追跡して実行する仕組み
+    - name: Run Shopee Engine (Auto-Locate)
       env:
         CANVA_CLIENT_ID: ${{ secrets.CANVA_CLIENT_ID }}
         CANVA_CLIENT_SECRET: ${{ secrets.CANVA_CLIENT_SECRET }}
         AMAZON_API_KEY: ${{ secrets.AMAZON_API_KEY }}
-        # 🔥 手動実行で選ばれた国コード（スケジュール起動時は自動でデフォルトの 'TW' になります）
         TARGET_COUNTRY: ${{ github.event.inputs.country || 'TW' }}
-      run: python pricing_engine_tw.py
+      run: |
+        echo "=== 🚀 スクリプトの自動探索と実行を開始 ==="
+        TARGET_FILE="pricing_engine_tw.py"
+        FOUND_PATH=$(find . -name "$TARGET_FILE" -print -quit)
+        
+        if [ -z "$FOUND_PATH" ]; then
+          echo "❌ エラー: リポジトリ内に $TARGET_FILE が見つかりません。ファイル名を確認してください。"
+          exit 1
+        else
+          echo "🎯 ファイルを発見しました: $FOUND_PATH"
+          python "$FOUND_PATH"
+        fi
 
-    # 生成されたCSVと画像を回収してGitHubに永久保存するステップ
+    # 生成された成果物を回収してGitHubに永久保存
     - name: Commit and Push Shopee Assets
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add outputs/shopee/*
-        git commit -m "📦 [Shopeeチーム] 最新のCSVおよびCanva画像を保管庫に格納しました" || echo "変更なし"
-        git push
+        
+        # 成果物フォルダが存在する場合のみコミット処理を実行
+        if [ -d "outputs/shopee" ]; then
+          git add outputs/shopee/*
+          git commit -m "📦 [Shopeeチーム] 台湾向け最新CSVおよびCanva画像を保管庫に格納しました" || echo "変更なし"
+          git push
+        else
+          echo "⚠️ 成果物フォルダ outputs/shopee が生成されなかったため、プッシュをスキップします。"
+        fi
