@@ -86,8 +86,9 @@ def run_canva_creative_engine(client_id: str, client_secret: str, product_name: 
     # 成果物フォルダへの物理画像書き出し
     output_filename = os.path.join(OUTPUT_DIR, "canva_output.png")
     
-    # 🔥 【修正箇所】構造的に100%正しい、完全クリーンなPNG画像のバイナリデータへ差し替え
-    png_pixel_data = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\xff\xff?\x00\x05\xfe\x02\xfe\r\xefF\xb8\x00\x00\x00\x00IEND\xaeB`\x82'
+    # 🎯 【超強固プラン】Gitの自動改行コード変換（破壊工作）を物理的に無効化する大容量ダミー構造
+    base_png = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\xff\xff?\x00\x05\xfe\x02\xfe\r\xefF\xb8\x00\x00\x00\x00IEND\xaeB`\x82'
+    png_pixel_data = base_png + (b'\x00' * 2048)  # 末尾にヌルバイトを大量結合し、Gitに「100%バイナリ」と強制認識させる
     
     try:
         with open(output_filename, "wb") as f:
@@ -107,7 +108,7 @@ def run_seo_translation(product_name_ja: str) -> dict:
 
 def generate_shopee_mass_update_csv(item_id: int, price_twd: int, product_name: str):
     """【ルート②】Shopeeセラーセンター一括変更用CSVの自動生成"""
-    print(f"[CSV Engine] Shopee一括更新用CSV of 組み立てを開始...")
+    print(f"[CSV Engine] Shopee一括更新用CSVの組み立てを開始...")
     
     filename = os.path.join(OUTPUT_DIR, "shopee_price_update.csv")
     headers = ["ps_item_id", "ps_item_name", "price", "stock", "update_timestamp"]
