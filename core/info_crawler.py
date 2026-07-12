@@ -114,6 +114,9 @@ def run_crawler():
     report += "<!-- このファイルは全AI社員の共通知識ベースとして自動更新されます -->\n\n"
     report += "## 🎯 監視対象国: TW, SG, MY, PH, TH, VN, BR, JP\n\n"
     
+    # バッククォークのエスケープ用変数（システムの干渉を100%防止）
+    ticks = "```"
+    
     for region, cat_ids in TARGET_CATEGORIES.items():
         flag = FLAGS.get(region, "🏳️")
         report += f"## {flag} Shopee {region} セラーエデュケーションハブ 巡回結果\n\n"
@@ -121,8 +124,6 @@ def run_crawler():
         for cat_id in cat_ids:
             print(f"[{region} スキャン中] カテゴリID: {cat_id} ...")
             modules = fetch_shopee_api_category(cat_id, region)
-            
-            base_url = f"https://{DOMAINS[region]}/edu/category?sub_cat_id={cat_id}"
             
             articles_found = False
             for module in modules:
@@ -142,4 +143,23 @@ def run_crawler():
                     if body_content:
                         clean_body = body_content.replace("<p>", "").replace("</p>", "\n").replace("<br>", "\n")
                         # 知識ベースとしてのコンテキスト容量を確保するため、主要部分を切り出して蓄積
-                        report += f"
+                        report += f"{ticks}text\n{clean_body[:1200]}\n{ticks}\n\n"
+                    else:
+                        report += "*(本文データの取得失敗、または空です)*\n\n"
+                        
+                    articles_found = True
+                    time.sleep(0.5) # 連続アクセスのウェイト
+                    
+            if not articles_found:
+                pass # 出力の視認性を高めるため、空のカテゴリはスキップ
+            time.sleep(1)
+
+    # 💾 共有知識ベースとして上書き保存
+    report_file = os.path.join(OUTPUT_DIR, f"{current_date}_shopee_rules_raw.md")
+    with open(report_file, "w", encoding="utf-8") as f:
+        f.write(report)
+        
+    print(f"✅ グローバル全地域のディープナレッジ回収が完了しました。 -> `{report_file}`")
+
+if __name__ == "__main__":
+    run_crawler()
