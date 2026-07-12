@@ -17,14 +17,14 @@ print("--------------------------------")
 
 def load_shopee_products() -> list:
     """【ルート①特化】マークダウンから監視商品リストを動的にパースする"""
-    products_file = "shopee_products.md"
+    # 🎯【絶対迷子にならない絶対パス化】
+    # 実行された場所に関わらず、このスクリプトと同じフォルダ内にある shopee_products.md を正確に指します。
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    products_file = os.path.join(base_dir, "shopee_products.md")
     
     # ファイルが存在しない場合は、スマホ編集用の初期サンプルを自動生成
     if not os.path.exists(products_file):
         default_content = """# 📦 Shopee 監視商品リスト
-<!-- スマホからこのファイルの行を増減させるだけで、AI社員が自動で一括巡回します -->
-<!-- フォーマット：* ASIN: [10桁] | ShopeeID: [数字] | 利益: [円] -->
-
 * ASIN: B0CSVTEST1 | ShopeeID: 9876543210 | 利益: 1500
 * ASIN: B0CSVTEST2 | ShopeeID: 9876543211 | 利益: 1200
 """
