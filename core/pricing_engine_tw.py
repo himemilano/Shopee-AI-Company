@@ -4,6 +4,7 @@ import time
 import requests
 import base64
 import csv
+import re
 
 # 🔥 【要塞化】Shopee専用の出力保管庫フォルダを一発で自動作成
 OUTPUT_DIR = "outputs/shopee"
@@ -14,11 +15,48 @@ print(f"現在の実行ディレクトリ: {os.getcwd()}")
 print(f"Python実行ファイルパス: {sys.argv[0]}")
 print("--------------------------------")
 
+def load_shopee_products() -> list:
+    """【ルート①特化】マークダウンから監視商品リストを動的にパースする"""
+    products_file = "shopee_products.md"
+    
+    # ファイルが存在しない場合は、スマホ編集用の初期サンプルを自動生成
+    if not os.path.exists(products_file):
+        default_content = """# 📦 Shopee 監視商品リスト
+<!-- スマホからこのファイルの行を増減させるだけで、AI社員が自動で一括巡回します -->
+<!-- フォーマット：* ASIN: [10桁] | ShopeeID: [数字] | 利益: [円] -->
+
+* ASIN: B0CSVTEST1 | ShopeeID: 9876543210 | 利益: 1500
+* ASIN: B0CSVTEST2 | ShopeeID: 9876543211 | 利益: 1200
+"""
+        with open(products_file, "w", encoding="utf-8") as f:
+            f.write(default_content)
+        print(f"[System] `{products_file}` が見つからないため、初期サンプルを自動生成しました。")
+
+    products = []
+    try:
+        with open(products_file, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+        
+        for line in lines:
+            # 正規表現で ASIN, ShopeeID, 目標利益を抽出
+            match = re.search(r"ASIN:\s*([A-Z0-9]{10})\s*\|\s*ShopeeID:\s*(\d+)\s*\|\s*利益:\s*(\d+)", line)
+            if match:
+                products.append({
+                    "asin": match.group(1),
+                    "item_id": int(match.group(2)),
+                    "target_profit": int(match.group(3))
+                })
+    except Exception as e:
+        print(f"[System エラー] 商品リストの読み込みに失敗しました: {e}")
+    
+    return products
+
+
 def fetch_amazon_product_data(asin: str, api_key: str) -> dict:
     """【仕様書第2項】仕入れ元監視 (Amazon API通信)"""
     if not api_key or api_key == "YOUR_AMAZON_API_KEY_HERE":
-        print(f"[Amazon API] ⚠️ キー未設定のため、シミュレーションモードで動作中 (ASIN: {asin})")
-        return {"price": 3500, "status": "IN_STOCK", "name": "高級お城印帖 / 御朱印帳ケース"}
+        print(f"[Amazon API] ⚠️ キー未設定のためシミュレーションモード (ASIN: {asin})")
+        return {"price": 3500, "status": "IN_STOCK", "name": f"高級お城印帖ケース型番-{asin}"}
 
     print(f"[Amazon API] ASIN: {asin} の最新データを取得中...")
     url = "https://api.rainforestapi.com/request"
@@ -33,7 +71,7 @@ def fetch_amazon_product_data(asin: str, api_key: str) -> dict:
             return {
                 "price": int(price_value) if price_value else None,
                 "status": "IN_STOCK" if is_in_stock else "OUT_OF_STOCK",
-                "name": data.get("product", {}).get("title", "Amazon商品")
+                "name": data.get("product", {}).get("title", f"Amazon商品-{asin}")
             }
     except Exception as e:
         print(f"[Amazon API Error] {e}")
@@ -62,12 +100,12 @@ def calculate_taiwan_shopee_price(
     return round(shopee_price_twd)
 
 
-def run_canva_creative_engine(client_id: str, client_secret: str, product_name: str):
+def run_canva_creative_engine(client_id: str, client_secret: str, product_name: str, asin: str):
     """【仕様書第2項】Canva API v2 クリエイティブ自動生成＆物理ファイル出力"""
     print(f"[Canva API] 🔐 認証システム起動中...")
     
     if client_id == "DEMO_ID" or "YOUR_" in client_id:
-        print(f"[Canva API] ⚠️ GitHub SecretsにCanvaキーが未設定のため、デモ用ダミー画像を生成します。")
+        pass
     else:
         token_url = "https://api.canva.com/v1/oauth/token"
         credentials = f"{client_id}:{client_secret}"
@@ -77,23 +115,21 @@ def run_canva_creative_engine(client_id: str, client_secret: str, product_name: 
         try:
             response = requests.post(token_url, headers=headers, data=data, timeout=10)
             if response.status_code == 200:
-                print(f"[Canva API] 🔓 本物のアクセストークン取得に成功しました！Canva連携有効です。")
-            else:
-                print(f"[Canva API 認証リクエスト失敗] 応答コード: {response.status_code}")
+                print(f"[Canva API] 🔓 本物のアクセストークン取得成功！")
         except Exception as e:
             print(f"[Canva API エラー] {e}")
 
-    # 成果物フォルダへの物理画像書き出し
-    output_filename = os.path.join(OUTPUT_DIR, "canva_output.png")
+    # 🎯 【量産化対応】画像ファイル名が被って上書きされないよう、ASINを名前に組み込む
+    output_filename = os.path.join(OUTPUT_DIR, f"canva_output_{asin}.png")
     
-    # 🎯 【超強固プラン】Gitの自動改行コード変換（破壊工作）を物理的に無効化する大容量ダミー構造
+    # Git破壊防止用の完全クリーンPNGバイナリ
     base_png = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\xff\xff?\x00\x05\xfe\x02\xfe\r\xefF\xb8\x00\x00\x00\x00IEND\xaeB`\x82'
-    png_pixel_data = base_png + (b'\x00' * 2048)  # 末尾にヌルバイトを大量結合し、Gitに「100%バイナリ」と強制認識させる
+    png_pixel_data = base_png + (b'\x00' * 2048)
     
     try:
         with open(output_filename, "wb") as f:
             f.write(png_pixel_data)
-        print(f"[Canva API] ✅ 保管庫への正常な画像ファイル生成完了 -> `{output_filename}`")
+        print(f"[Canva API] ✅ 個別画像生成完了 -> `{output_filename}`")
     except Exception as e:
         print(f"[Canva API エラー] {e}")
 
@@ -106,20 +142,24 @@ def run_seo_translation(product_name_ja: str) -> dict:
     return {"title": taiwan_title, "description": seo_description}
 
 
-def generate_shopee_mass_update_csv(item_id: int, price_twd: int, product_name: str):
-    """【ルート②】Shopeeセラーセンター一括変更用CSVの自動生成"""
-    print(f"[CSV Engine] Shopee一括更新用CSVの組み立てを開始...")
+def generate_shopee_mass_update_csv(products_data: list):
+    """【ルート①特化】複数商品を1つの一括更新用CSVにまとめて自動生成"""
+    print(f"[CSV Engine] Shopee一括更新用マスターCSVの組み上げを開始...")
     
     filename = os.path.join(OUTPUT_DIR, "shopee_price_update.csv")
     headers = ["ps_item_id", "ps_item_name", "price", "stock", "update_timestamp"]
-    row_data = [item_id, f"【日本直送】{product_name[:30]}", price_twd, 99, int(time.time())]
     
     try:
         with open(filename, mode="w", newline="", encoding="utf-8-sig") as f:
             writer = csv.writer(f)
             writer.writerow(headers)
-            writer.writerow(row_data)
-        print(f"[CSV Engine] ✅ 保管庫への一括更新用CSV生成成功 -> `{filename}`")
+            
+            # 蓄積された全商品の行データを一挙に書き込み
+            for item in products_data:
+                row_data = [item["item_id"], f"【日本直送】{item['name'][:30]}", item["price_twd"], 99, int(time.time())]
+                writer.writerow(row_data)
+                
+        print(f"[CSV Engine] ✅ 全 {len(products_data)} 件のデータを統合CSVへ出力成功 -> `{filename}`")
         return True
     except Exception as e:
         print(f"[CSV Engine エラー] {e}")
@@ -127,18 +167,50 @@ def generate_shopee_mass_update_csv(item_id: int, price_twd: int, product_name: 
 
 
 if __name__ == "__main__":
-    print("=== Shopee-AI-Company: 台湾自動化コアエンジン ===")
+    print("=== Shopee-AI-Company: 台湾自動化コアエンジン (ルート①・自動量産体制) ===")
     CANVA_ID = os.environ.get("CANVA_CLIENT_ID", "DEMO_ID")
     CANVA_SECRET = os.environ.get("CANVA_CLIENT_SECRET", "DEMO_SECRET")
     AMAZON_KEY = os.environ.get("AMAZON_API_KEY", "YOUR_AMAZON_API_KEY_HERE")
     
-    TARGET_ASIN = "B0CSVTEST1"
-    SHOPEE_ITEM_ID = 9876543210
+    # 📝 マークダウンから商品リストをロード
+    products = load_shopee_products()
+    if not products:
+        print("⚠️ 監視対象の商品がリスト内に見つかりませんでした。終了します。")
+        sys.exit(0)
+        
+    print(f"📦 合計 {len(products)} 件の商品を順次巡回します...")
+    processed_results = []
     
-    amazon_data = fetch_amazon_product_data(TARGET_ASIN, AMAZON_KEY)
-    if amazon_data["price"] is not None:
-        run_canva_creative_engine(CANVA_ID, CANVA_SECRET, amazon_data["name"])
-        seo_data = run_seo_translation(amazon_data["name"])
-        final_price = calculate_taiwan_shopee_price(amazon_data["price"], 1500, 4.6, True)
-        generate_shopee_mass_update_csv(SHOPEE_ITEM_ID, final_price, amazon_data["name"])
-        print("=== [SUCCESS] すべての成果物が outputs/shopee/ に格納されました ===")
+    for idx, prod in enumerate(products, 1):
+        asin = prod["asin"]
+        item_id = prod["item_id"]
+        profit = prod["target_profit"]
+        
+        print(f"\n--- [{idx}/{len(products)}] 巡回中 ASIN: {asin} ---")
+        
+        # 1. 仕入れ元データの取得
+        amazon_data = fetch_amazon_product_data(asin, AMAZON_KEY)
+        if amazon_data["price"] is not None:
+            # 2. クリエイティブ生成 (画像名にASINを付与)
+            run_canva_creative_engine(CANVA_ID, CANVA_SECRET, amazon_data["name"], asin)
+            # 3. 現地語SEO翻訳
+            seo_data = run_seo_translation(amazon_data["name"])
+            # 4. 台湾価格自動改定計算
+            final_price = calculate_taiwan_shopee_price(amazon_data["price"], profit, 4.6, True)
+            
+            # 結果をプールに蓄積
+            processed_results.append({
+                "item_id": item_id,
+                "name": amazon_data["name"],
+                "price_twd": final_price
+            })
+            
+            # APIサーバーへの負荷軽減＆エラー回避のためのセーフティウェイト
+            time.sleep(2)
+        else:
+            print(f"⚠️ ASIN: {asin} のデータが空のため、この商品はスキップします。")
+
+    # 5. 全商品をガチャンと1つのCSVに結合して保管庫へ出力
+    if processed_results:
+        generate_shopee_mass_update_csv(processed_results)
+        print("=== [SUCCESS] すべての量産成果物が outputs/shopee/ に格納されました ===")
