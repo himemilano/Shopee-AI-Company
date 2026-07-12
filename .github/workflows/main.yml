@@ -30,9 +30,9 @@ jobs:
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install requests
+        pip install requests beautifulsoup4
 
-    # 📂 【迷子撃退機能】リポジトリ内のどこにPythonファイルがあっても自動追跡して実行する仕組み
+    # 📂 【迷子撃退機能】価格改定エンジンの自動追跡・実行
     - name: Run Shopee Engine (Auto-Locate)
       env:
         CANVA_CLIENT_ID: ${{ secrets.CANVA_CLIENT_ID }}
@@ -40,7 +40,7 @@ jobs:
         AMAZON_API_KEY: ${{ secrets.AMAZON_API_KEY }}
         TARGET_COUNTRY: ${{ github.event.inputs.country || 'TW' }}
       run: |
-        echo "=== 🚀 スクリプトの自動探索と実行を開始 ==="
+        echo "=== 🚀 価格改定スクリプトの自動探索と実行を開始 ==="
         TARGET_FILE="pricing_engine_tw.py"
         FOUND_PATH=$(find . -name "$TARGET_FILE" -print -quit)
         
@@ -52,7 +52,22 @@ jobs:
           python "$FOUND_PATH"
         fi
 
-    # 生成された成果物を回収してGitHubに永久保存
+    # ⚖️ 【新規追加】法務・規約監視スクリプトの自動追跡・実行
+    - name: Run Shopee Info Crawler (Auto-Locate)
+      run: |
+        echo "=== ⚖️ 規約監視スクリプトの自動探索と実行を開始 ==="
+        TARGET_FILE="info_crawler.py"
+        FOUND_PATH=$(find . -name "$TARGET_FILE" -print -quit)
+        
+        if [ -z "$FOUND_PATH" ]; then
+          echo "❌ エラー: リポジトリ内に $TARGET_FILE が見つかりません。ファイル名を確認してください。"
+          exit 1
+        else
+          echo "🎯 ファイルを発見しました: $FOUND_PATH"
+          python "$FOUND_PATH"
+        fi
+
+    # 生成された成果物（CSV/画像/規約レポート）をまとめて回収してGitHubに永久保存
     - name: Commit and Push Shopee Assets
       run: |
         git config --local user.email "action@github.com"
@@ -62,11 +77,16 @@ jobs:
         git config --local core.autocrlf false
         git config --local core.safecrlf false
         
-        # 成果物フォルダが存在する場合のみコミット処理を実行
+        # 成果物（価格データ・画像）の回収
         if [ -d "outputs/shopee" ]; then
           git add -A outputs/shopee/
-          git commit -m "📦 [Shopeeチーム] 台湾向け最新CSVおよびCanva画像を保管庫に格納しました（Git防衛適用）" || echo "変更なし"
-          git push
-        else
-          echo "⚠️ 成果物フォルダ outputs/shopee が生成されなかったため、プッシュをスキップします。"
         fi
+        
+        # 成果物（規約レポート）の回収
+        if [ -d "outputs/shopee_rules" ]; then
+          git add -A outputs/shopee_rules/
+        fi
+        
+        # コミットとプッシュを実行
+        git commit -m "📦 [Shopeeチーム] 最新の価格CSV・画像・規約監視レポートを保管庫に格納しました" || echo "変更なし"
+        git push
