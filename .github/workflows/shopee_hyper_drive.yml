@@ -1,5 +1,8 @@
 name: 🛍️ Shopee AI Agent Hyper-Drive Loop
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
 on:
   schedule:
     # 毎時0分に起動して常時コンテナを稼働
