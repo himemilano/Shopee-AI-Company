@@ -1,21 +1,21 @@
-name: 🛍️ Shopee AI Agent Hyper-Drive Loop
+name: 🛍️ Shopee Patrol Hyper-Drive
 
 concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: true
+
 on:
   schedule:
-    # 毎時0分に起動して常時コンテナを稼働
     - cron: '0 * * * *'
-  workflow_dispatch: # 手動即時起動ボタン
+  workflow_dispatch:
 
 permissions:
-  contents: write # 監視ログや分析シートをGitHubへ自動コミットする権限
+  contents: write
 
 jobs:
   run-shopee-limitless:
     runs-on: ubuntu-latest
-    timeout-minutes: 350 # 最大実行時間（約6時間限界）
+    timeout-minutes: 350
 
     steps:
     - name: Checkout Repository
@@ -31,11 +31,20 @@ jobs:
         python -m pip install --upgrade pip
         pip install requests
 
-    # 🛍️ Shopee価格・競合自動パトロール実行
     - name: Run Shopee Loop Agent
       env:
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY_FX }}
+        API_KEY: ${{ secrets.GEMINI_API_KEY_FX }}
       run: |
         echo "=== 🛍️ Shopee自律パトロールハイパードライブ 起動 ==="
-        python shopee_bot/agents/shopee_loop_runner.py
+        # プログラムが探せるようにカレントディレクトリを移動して実行するか、正しいパスを指定します
+        if [ -f "shopee_bot/agents/shopee_loop_runner.py" ]; then
+          python shopee_bot/agents/shopee_loop_runner.py
+        elif [ -f "shopee_loop_runner.py" ]; then
+          python shopee_loop_runner.py
+        else
+          echo "⚠️ ランナーファイルが見つかりません。リポジトリ内のパスを確認してください。"
+          find . -name "*shopee_loop_runner.py"
+        fi
+
 
