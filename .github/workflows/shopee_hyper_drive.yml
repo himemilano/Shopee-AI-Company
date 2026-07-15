@@ -1,0 +1,43 @@
+name: 🤖 AI App Development Autonomous Operation (One-Shot)
+
+on:
+  schedule:
+    # 毎日 日本時間 10:50, 14:50, 17:50 に自動起動（1回につき数分で確実にコミットして即退勤）
+    - cron: '50 1,5,8 * * *'
+  workflow_dispatch: # いつでも手動で即時開発を指示できるボタン
+
+permissions:
+  contents: write
+
+jobs:
+  run-ai-development:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        # 必要なライブラリをあらかじめ確実にインストール
+        pip install requests google-generativeai crewai langchain-google-genai pydantic
+
+    - name: Run AI App Development
+      env:
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      run: python main.py
+
+    - name: Commit and Push Code Progress
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add -A
+        git commit -m "🤖 [アプリ開発部] 実装コードおよび進捗ログを格納し、定時退勤します ($(date))" || echo "変更なし"
+        git push
