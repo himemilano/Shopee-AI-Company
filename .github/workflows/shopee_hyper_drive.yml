@@ -1,16 +1,16 @@
-name: 🤖 AI App Development Autonomous Operation (One-Shot)
+name: 🛍️ Shopee Patrol One-Shot Advance
 
 on:
   schedule:
     # 毎日 日本時間 10:50, 14:50, 17:50 に自動起動（1回につき数分で確実にコミットして即退勤）
     - cron: '50 1,5,8 * * *'
-  workflow_dispatch: # いつでも手動で即時開発を指示できるボタン
+  workflow_dispatch: # 会長が手動でいつでも「今すぐリサーチして進めろ」と命令できるボタン
 
 permissions:
   contents: write
 
 jobs:
-  run-ai-development:
+  run-shopee-limitless:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,19 +25,24 @@ jobs:
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
-        # 必要なライブラリをあらかじめ確実にインストール
-        pip install requests google-generativeai crewai langchain-google-genai pydantic
+        # 画像生成やAPIリクエストに必要なパッケージのみをクリーンにプリインストールします
+        pip install requests google-generativeai
 
-    - name: Run AI App Development
+    - name: Run Shopee Patrol
       env:
-        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      run: python main.py
+        # 最新の仕様に合わせ、APIキーを複数の環境変数名で確実にコンテナに引き渡します
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY_FX }}
+        GOOGLE_API_KEY: ${{ secrets.GEMINI_API_KEY_FX }}
+        API_KEY: ${{ secrets.GEMINI_API_KEY_FX }}
+      run: |
+        echo "=== 🛍️ Shopee自律パトロール 起動 ==="
+        python main.py
 
-    - name: Commit and Push Code Progress
+    - name: Commit and Push Progress
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add -A
-        git commit -m "🤖 [アプリ開発部] 実装コードおよび進捗ログを格納し、定時退勤します ($(date))" || echo "変更なし"
+        # 生成された高品質なアイキャッチ画像（outputs/images/）と出品用CSVを自動でコミットして定時退勤します
+        git commit -m "🛍️ [Shopee物販部] パトロール完了。最新の仕入価格調査および広告バナー画像を格納して退勤します ($(date))" || echo "変更なし"
         git push
