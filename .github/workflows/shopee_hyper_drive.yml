@@ -1,9 +1,9 @@
 name: 🛍️ Shopee Patrol One-Shot Advance
 
 on:
-  schedule:
+  #schedule:
     # 毎日 日本時間 10:50, 14:50, 17:50 に自動起動（1回につき数分で確実にコミットして即退勤）
-    - cron: '50 1,5,8 * * *'
+    #- cron: '50 1,5,8 * * *'
   workflow_dispatch: # 会長が手動でいつでも「今すぐリサーチして進めろ」と命令できるボタン
 
 permissions:
